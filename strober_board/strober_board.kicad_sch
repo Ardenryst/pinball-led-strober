@@ -5191,7 +5191,7 @@
 	)
 	(symbol
 		(lib_id "Connector_Generic:Conn_01x02")
-		(at 97.79 82.55 0)
+		(at 30.48 59.69 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -5199,7 +5199,7 @@
 		(dnp no)
 		(uuid "55727896-f055-4a85-af64-b546b65eaa0d")
 		(property "Reference" "J3"
-			(at 97.79 87.63 0)
+			(at 30.48 54.61 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5207,7 +5207,7 @@
 			)
 		)
 		(property "Value" "Conn_01x02"
-			(at 97.79 88.9 0)
+			(at 30.48 53.34 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5216,7 +5216,7 @@
 			)
 		)
 		(property "Footprint" "Connector_Molex:Molex_KK-254_AE-6410-02A_1x02_P2.54mm_Vertical"
-			(at 97.79 82.55 0)
+			(at 30.48 59.69 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5225,7 +5225,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 97.79 82.55 0)
+			(at 30.48 59.69 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5234,7 +5234,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 97.79 82.55 0)
+			(at 30.48 59.69 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5947,8 +5947,8 @@
 	)
 	(symbol
 		(lib_id "Connector_Generic:Conn_01x02")
-		(at 30.48 57.15 0)
-		(mirror y)
+		(at 97.79 85.09 0)
+		(mirror x)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -5956,7 +5956,7 @@
 		(dnp no)
 		(uuid "9decf0ab-57cb-43b0-8881-b46f9e7f5fba")
 		(property "Reference" "J1"
-			(at 30.226 62.484 0)
+			(at 98.044 79.756 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5964,7 +5964,7 @@
 			)
 		)
 		(property "Value" "Conn_01x02"
-			(at 30.48 63.5 0)
+			(at 97.79 78.74 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5973,7 +5973,7 @@
 			)
 		)
 		(property "Footprint" "Connector_JST:JST_EH_B2B-EH-A_1x02_P2.50mm_Vertical"
-			(at 30.48 57.15 0)
+			(at 97.79 85.09 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5982,7 +5982,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 30.48 57.15 0)
+			(at 97.79 85.09 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5991,7 +5991,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 30.48 57.15 0)
+			(at 97.79 85.09 0)
 			(effects
 				(font
 					(size 1.27 1.27)
