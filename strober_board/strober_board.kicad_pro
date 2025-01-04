@@ -446,7 +446,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "whip_mod_board.kicad_pro",
+    "filename": "strober_board.kicad_pro",
     "version": 1
   },
   "net_settings": {
@@ -481,7 +481,7 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "",
+      "plot": "./production",
       "pos_files": "",
       "specctra_dsn": "",
       "step": "",
