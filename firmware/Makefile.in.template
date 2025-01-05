@@ -1,0 +1,12 @@
+# Example using the ARVIPSmkII, check arvdude or Arduino documentation for other options
+#PROGRAMMER=avrispmkII
+#PORT=usb
+#BAUD=-B12
+
+# Example Mac
+#AVR_TOOLS_PATH	= ~/Library/Arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/bin
+#AVR_DUDE_PATH	= ~/Library/Arduino15/packages/arduino/tools/avrdude/6.3.0-arduino18/bin/
+
+# Example Linux
+#AVR_TOOLS_PATH	= ~/.arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/bin
+#AVR_DUDE_PATH	= ~/.arduino15/packages/arduino/tools/avrdude/6.3.0-arduino18/bin/
