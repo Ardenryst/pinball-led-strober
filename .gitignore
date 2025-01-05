@@ -1,0 +1,5 @@
+.DS_Store
+firmware/build
+firmware/Makefile.in
+
+strober_board/strober_board-backups
