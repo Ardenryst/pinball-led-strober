@@ -3616,6 +3616,19 @@
 		)
 		(uuid "579bd681-6865-480b-a539-5f87916d3d0d")
 	)
+	(text "Fixme! Reverse polarity protection is flawed!\nDoesn't cover load path!"
+		(exclude_from_sim no)
+		(at 12.7 24.384 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.254)
+				(bold yes)
+			)
+			(justify left)
+		)
+		(uuid "c65188c7-23c5-48a4-a544-94b09c0df6fe")
+	)
 	(label "LED_{out}"
 		(at 81.28 93.98 180)
 		(fields_autoplaced yes)

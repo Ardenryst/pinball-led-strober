@@ -1,13 +1,8 @@
+include Makefile.in
+
 MCU:=attiny85
 F_CPU:=8000000
-PROGRAMMER=avrispmkII
-PORT=usb
-# BAUD=-B12
 
-#  ~/.arduino15/packages/DxCore/tools/avrdude/6.3.0-arduino17or18/bin 
-
-AVR_TOOLS_PATH	:= ~/.arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/bin/
-AVR_DUDE_PATH	:= ~/.arduino15/packages/arduino/tools/avrdude/6.3.0-arduino17/bin/
 TARGET          = firmware
 
 
