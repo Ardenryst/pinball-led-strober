@@ -2,6 +2,8 @@
 
 Firmware is written in C and has no external dependecies.
 
+**Info** This software is very minimal and likely to change in the future.
+
 ## Building
 
 While this is NOT an Arduino project, the easiest way to get all the necessary development tools, is in fact to use what comes bundled with Arduino. If you already have Arduino installed, follow these steps, otherwise I'd recommend using `arduino-cli` instead.
