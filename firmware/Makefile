@@ -76,7 +76,10 @@ size:
 	#$(SIZE) --mcu=$(MCU) -C $(TARGET).elf
 
 program:
-	$(AVR_DUDE) -p$(MCU) -P$(PORT) $(BAUD) -c$(PROGRAMMER) -V -v -Uflash:w:$(APP_DIR)/$(TARGET).hex:i
+	$(AVR_DUDE) -p$(MCU) -P$(PORT) $(BAUD) -c$(PROGRAMMER) -v -Uflash:w:$(APP_DIR)/$(TARGET).hex:i
+
+burn_fuses:
+	$(AVR_DUDE) -p$(MCU) -P$(PORT) $(BAUD) -c$(PROGRAMMER) -v -e -Uefuse:w:0xFF:m -Uhfuse:w:0b11010111:m -Ulfuse:w:0xE2:m
 
 build:
 	@mkdir -p $(APP_DIR)
