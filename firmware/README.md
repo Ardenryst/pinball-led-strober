@@ -2,7 +2,7 @@
 
 Firmware is written in C and has no external dependecies.
 
-**Info** This software is very minimal and likely to change in the future.
+**Info** This software is very minimal and likely to change in the future. But hey, 
 
 ## Building
 
@@ -33,7 +33,19 @@ The firmware is build via `make`. To tell it where your compiler and other tools
 
 ### Compile
 
-Run `make` from the firmware root directory. When successfull, flash it to the controller with `make program`.
+Run `make` from the firmware root directory to build the software.
+
+
+### Set fuses
+
+To prime chip the fuse bits have to be flashed first. This configures hardware functions like clock speed etc. of the MCU. Use `make burn_fuses` for this. This has only to be done once since uploading firmware file does not touch the fuse settings.
+
+
+### Upload firmware
+
+Run `make program` to flash the firmware. This will upload the build to the target. The execution should start imeadiately once upload is completed.
+
+`make && make program` will rebuild the project and, if successfull, then upload it. This is convinient during development.
 
 
 ## Changing animation
