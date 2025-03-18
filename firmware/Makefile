@@ -8,37 +8,23 @@ TARGET          = firmware
 
 CC      = $(AVR_TOOLS_PATH)/avr-gcc
 CXX     = $(AVR_TOOLS_PATH)/avr-g++
-# AS      = $(AVR_TOOLS_PATH)/$(AS_NAME)
 OBJCOPY = $(AVR_TOOLS_PATH)/avr-objcopy
 OBJDUMP = $(AVR_TOOLS_PATH)/avr-objdump
 AR      = $(AVR_TOOLS_PATH)/avr-gcc-ar
 SIZE    = $(AVR_TOOLS_PATH)/avr-size
-# NM      = $(AVR_TOOLS_PATH)/avr-nm
 
 AVR_DUDE= $(AVR_DUDE_PATH)/avrdude -C $(AVR_DUDE_PATH)/../etc/avrdude.conf 
 
-# CXXFLAGS := -pedantic-errors -Wall -Wextra -Werror
-OBJ_DIR  = ./build/obj
-APP_DIR  := ./build
+OBJ_DIR = ./build/obj
+APP_DIR := ./build
 
-SOURCES_C  :=   $(wildcard ./*.c)
+SOURCES_C := $(wildcard ./*.c)
 
-# SOURCES_CPP  := $(wildcard ./*.cpp)
-
-OBJECTS  += \
+OBJECTS += \
 	$(SOURCES_C:%.c=$(OBJ_DIR)/%.o)
-# 	$(SOURCES_CPP:%.cpp=$(OBJ_DIR)/%.o)
 
-#NOTE für vollen FP support in printf -Wl,-u,vfprintf -lprintf_flt -lm
-#TODO -pedantic-errors -Wall -Wextra -Werror wieder einschalten und die ganzen Warungen zum Verstummen bringen
 CFLAGS = -c -Os -flto
-#TODO -flto funktioniert nicht, compiler crasht mal wieder. Dreckssoftware!
-CFLAGS += -D F_CPU=$(F_CPU) -D BOARD_VER=$(BOARD_VER) -D BOARD_REV=$(BOARD_REV)
-
-#TODO evaluate flags
-# CXXFLAGS = -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics
-
-# LDFLAGS = -flto
+CFLAGS += -D F_CPU=$(F_CPU)
 
 all: clean build $(APP_DIR)/$(TARGET).hex size
 
@@ -46,11 +32,6 @@ $(OBJ_DIR)/%.o: %.c
 	@mkdir -p $(@D)
 	@echo ">> Building obj [$<]..."
 	$(CC) $(CFLAGS) -mmcu=$(MCU) $< -o $@ -I ./
-
-# $(OBJ_DIR)/%.o: %.cpp
-# 	@mkdir -p $(@D)
-# 	@echo ">> Building obj [$<]..."
-# 	$(CXX) $(CFLAGS) $(CXXFLAGS) -mmcu=$(MCU) $< -o $@
 
 $(APP_DIR)/$(TARGET).elf: $(OBJECTS)
 	@mkdir -p $(@D)
@@ -69,7 +50,6 @@ $(OBJ_DIR)/%.i: %.c
 
 
 dump: $(SOURCES:%.c=$(OBJ_DIR)/%.i)
-	
 
 size:
 	$(OBJDUMP) -Pmem-usage $(APP_DIR)/$(TARGET).elf
