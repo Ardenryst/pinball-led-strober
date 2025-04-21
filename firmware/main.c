@@ -110,11 +110,11 @@ const uint16_t PROGMEM gamma_8b[] = {
 
 // more or less copy pasted and updated, with no real idea what I was doing. Seems to work OK though...
 uint16_t correctGamma12(uint16_t value) {
-  uint16_t y = pgm_read_word(&gamma_8b[value / 16]);
-  uint16_t z1 = (value / 16 == 0) ? 0 : pgm_read_word(&gamma_8b[value / 16 - 1]);
-  uint16_t z = (y - z1) / 16 * (value % 16 + 1) + z1;
+  uint16_t y = pgm_read_word(&gamma_8b[value / 256]);
+  uint16_t z1 = (value / 256 == 0) ? 0 : pgm_read_word(&gamma_8b[value / 256 - 1]);
+  uint16_t z = (y - z1) / 256 * (value % 256 + 1) + z1;
 
-  return z >> 6;
+  return z;
 }
 
 const uint8_t exptable5[32] PROGMEM =
@@ -134,18 +134,40 @@ const uint8_t exptable5[32] PROGMEM =
 // // #define MAX_BRIGHTNESS 100
 // #define BRIGHTNESS_VARIANCE (100-BASE_BRIGHTNESS)
 
-// Basishelligkeit, bezogen auf max. Umgebungshelligkeit
-#define BASE_BRIGHTNESS 3000
-// +/- var/2 auf Basishelligkeit
-#define BRIGHTNESS_VARIANCE 2200
-// Faktor für Überhöhung der Bezugshelligkeit aus der Umgebung
-#define ELEVATION 1.3
+// Base brightness, relative to max ambient brightness
+#define BASE_BRIGHTNESS 5500
+// +/- var/2 to base brightness
+#define BRIGHTNESS_VARIANCE 3000
+// Elevation factor for ambient brightness reference
+#define ELEVATION 1.5
 
-#define MIN_FADE_TIME 50
-#define FADE_TIME_VARIANCE 100
+// Total duration of the animation in milliseconds
+#define ANIMATION_DURATION 3500
 
-#define MIN_HOLD_TIME 100
+// Duration of the initial light flash in milliseconds
+#define INITIAL_FLASH_DURATION 100
+
+// Brightness multiplier for the initial flash (relative to MAX_BRIGHTNESS)
+#define INITIAL_FLASH_MULTIPLIER 1.3
+
+// Minimum runtime of the animation in milliseconds before it can be restarted
+#define MIN_ANIMATION_RUN_TIME 800
+
+// Minimum time for brightness changes (ms)
+#define MIN_FADE_TIME 1
+// Additional random time for brightness changes (ms)
+#define FADE_TIME_VARIANCE 10
+
+// Minimum time to hold a brightness level (ms)
+#define MIN_HOLD_TIME 50
+// Additional random time to hold a brightness level (ms)
 #define HOLD_TIME_VARIANCE 200
+
+// Parameters for power surge simulation
+#define FLICKER_PROBABILITY 25    // Probability of flickering (1-100)
+#define MAX_BRIGHTNESS 6500       // Maximum brightness during power surges
+#define BLACKOUT_PROBABILITY 5    // Reduced probability of short total blackout
+#define BLACKOUT_DURATION 150     // Duration of total blackout (ms)
 
 struct Led {
   volatile int *dac;
@@ -231,28 +253,117 @@ int main() {
         break;
       case FLASH: {
         static bool cooldown;
-        static struct Timer timer = {.cycle=3000};
-        if(onEnter(&fsm)) {
-          fade(led, 0, BASE_BRIGHTNESS+BRIGHTNESS_VARIANCE/2, 10);
+        static struct Timer timer = {.cycle=ANIMATION_DURATION};  // Use of configurable duration
+        static struct Timer blackout_timer = {0};
+        static bool in_blackout = false;
+        static bool initial_flash_done = false;
+        static struct Timer initial_hold_timer = {.cycle=INITIAL_FLASH_DURATION}; // Configurable hold time for initial flash
+        static bool button_released = true;
+        static struct Timer button_debounce_timer = {.cycle=50}; // Debounce time
+        static struct Timer animation_run_timer = {.cycle=MIN_ANIMATION_RUN_TIME}; // Timer for minimum runtime
+        static bool can_restart = false;
+        
+        // Function to restart the animation
+        void restartAnimation(void) {
+          fade(led, led->goal, MAX_BRIGHTNESS * INITIAL_FLASH_MULTIPLIER, 1);  // Immediate very bright flash
+          initial_flash_done = false;
           cooldown = false;
           resetTimer(&timer);
+          resetTimer(&initial_hold_timer);
+          resetTimer(&animation_run_timer);
+          can_restart = false;
+          in_blackout = false;
         }
+        
+        if(onEnter(&fsm)) {
+          // Immediate bright flash at the beginning
+          restartAnimation();
+          button_released = false; // Mark button as pressed at start
+        }
+        
+        // Check if minimum runtime has been reached
+        if(!can_restart && checkTimer(&animation_run_timer)) {
+          can_restart = true;
+        }
+        
+        // Monitor button status for restarts
+        if(PIN(BTN) != 0) {
+          // Button was released
+          button_released = true;
+          resetTimer(&button_debounce_timer);
+        } else if(button_released && checkTimer(&button_debounce_timer) && can_restart) {
+          // Button was pressed again after release (debounced) and minimum runtime is reached
+          button_released = false;
+          restartAnimation();  // Restart animation
+        }
+        
         if(checkTimer(&timer)) {
           transit(&fsm, STANDBY);
         }
-        if(checkAndResetTimer(&led->fade_timer)) {
-          if(cooldown) { // Helligkeit eine Weile beibehalten
+        
+        // Total short outage (Blackout)
+        if(in_blackout) {
+          if(checkAndResetTimer(&blackout_timer)) {
+            in_blackout = false;
+            // Start with bright power surge after outage
+            fade(led, 0, BASE_BRIGHTNESS + (rand() % (BRIGHTNESS_VARIANCE/2)), MIN_FADE_TIME);
+          }
+        } 
+        else if(checkAndResetTimer(&led->fade_timer)) {
+          if(!initial_flash_done) {
+            if(checkTimer(&initial_hold_timer)) {
+              // After hold time of initial flash, dim to elevated base brightness
+              initial_flash_done = true;
+              // Longer transition to higher base brightness
+              fade(led, MAX_BRIGHTNESS * INITIAL_FLASH_MULTIPLIER, BASE_BRIGHTNESS * 1.4, 500);
+            } else {
+              // Maintain flash for the hold time
+              fade(led, MAX_BRIGHTNESS * INITIAL_FLASH_MULTIPLIER, MAX_BRIGHTNESS * INITIAL_FLASH_MULTIPLIER, 1);
+            }
+          }
+          // Random chance for total outage
+          else if(rand() % 100 < BLACKOUT_PROBABILITY) {
+            in_blackout = true;
+            blackout_timer.cycle = BLACKOUT_DURATION + (rand() % 200);
+            resetTimer(&blackout_timer);
+            fade(led, led->goal, 0, MIN_FADE_TIME);
+          }
+          // Normal animation cycle
+          else if(cooldown) { // Maintain brightness for a while
             cooldown = false;
-            uint16_t duration = MIN_HOLD_TIME+(rand() / (RAND_MAX / HOLD_TIME_VARIANCE + 1));
-            fade(led, led->goal, led->goal, duration);
-          } else {              // Neue Helligkeit setzen
+            
+            // Longer hold time for more stable phases
+            uint16_t duration = MIN_HOLD_TIME + (rand() % HOLD_TIME_VARIANCE);
+            
+            // Chance for sudden power surge
+            if(rand() % 100 < FLICKER_PROBABILITY) {
+              // Bright power surge, fast rise
+              uint16_t peak = BASE_BRIGHTNESS + BRIGHTNESS_VARIANCE/2 + (rand() % (MAX_BRIGHTNESS - BASE_BRIGHTNESS - BRIGHTNESS_VARIANCE/2));
+              
+              // With low probability especially bright peak
+              if(rand() % 100 < 25) {
+                peak = MAX_BRIGHTNESS + (rand() % 1000);  // Occasionally overshoot
+              }
+              
+              fade(led, led->goal, peak, 1);
+            } else {
+              fade(led, led->goal, led->goal, duration);
+            }
+          } else {  // Set new brightness
             cooldown = true;
-            // Halbe Helligkeit + Zufallswert mit +- Varianz/2
-            int16_t to = BASE_BRIGHTNESS+(-BRIGHTNESS_VARIANCE/2 + (rand() / (RAND_MAX / BRIGHTNESS_VARIANCE + 1)));
-            uint16_t duration = MIN_FADE_TIME+(rand() / (RAND_MAX / FADE_TIME_VARIANCE + 1));
-//             to = 512;
-//             duration = 500;
-            fade(led, led->goal, to, duration);
+            
+            // Random brightness with larger fluctuations
+            int16_t base_level = BASE_BRIGHTNESS + (-BRIGHTNESS_VARIANCE/2 + (rand() % BRIGHTNESS_VARIANCE));
+            
+            // More variable, mainly faster transitions
+            uint16_t duration = MIN_FADE_TIME + (rand() % FADE_TIME_VARIANCE);
+            
+            // Occasionally simulate short, not quite as dark phases
+            if(rand() % 100 < 15) {  // Lower probability for darker phases
+              base_level = BASE_BRIGHTNESS / 2 + (rand() % (BASE_BRIGHTNESS / 3));  // Less dark
+            }
+            
+            fade(led, led->goal, base_level, duration);
           }
         }
         break;

@@ -50,4 +50,16 @@ Run `make program` to flash the firmware. This will upload the build to the targ
 
 ## Changing animation
 
-There is no way to configure anything at this point, you'll have to hack away at the code. Some high level 
+The animation can be customized using constants in the `main.c` file. The following settings are particularly relevant:
+
+* `ANIMATION_DURATION`: Total duration of the animation in milliseconds
+* `INITIAL_FLASH_DURATION`: Duration of the initial light flash in milliseconds
+* `INITIAL_FLASH_MULTIPLIER`: Brightness multiplier for the initial flash (relative to MAX_BRIGHTNESS)
+* `MIN_ANIMATION_RUN_TIME`: Minimum runtime of the animation before it can be restarted
+* `BASE_BRIGHTNESS`: Base brightness of the LED
+* `BRIGHTNESS_VARIANCE`: Range of brightness variation
+* `MAX_BRIGHTNESS`: Maximum brightness during power surges
+* `FLICKER_PROBABILITY`: Probability of power surge effects (1-100)
+* `BLACKOUT_PROBABILITY`: Probability of complete blackout
+
+After any changes, the code must be recompiled and uploaded.
