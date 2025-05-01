@@ -18,9 +18,10 @@
 // ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
 
 // Base brightness, relative to max ambient brightness
-#define BASE_BRIGHTNESS 3000
+#define BASE_BRIGHTNESS 5000
 // +/- var to base brightness
-#define BRIGHTNESS_VARIANCE 3125
+//#define BRIGHTNESS_VARIANCE 3625
+#define BRIGHTNESS_VARIANCE 4125
 // Total duration of the animation in milliseconds
 #define ANIMATION_DURATION 3500
 // Duration of the initial light flash in milliseconds
