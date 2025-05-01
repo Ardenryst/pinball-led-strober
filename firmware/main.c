@@ -13,6 +13,42 @@
 
 #include <util.h>
 
+// ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
+// ↓ Animation configuration ↓
+// ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
+
+// Base brightness, relative to max ambient brightness
+#define BASE_BRIGHTNESS 3000
+// +/- var to base brightness
+#define BRIGHTNESS_VARIANCE 3125
+// Total duration of the animation in milliseconds
+#define ANIMATION_DURATION 3500
+// Duration of the initial light flash in milliseconds
+#define INITIAL_FLASH_DURATION 100
+// Brightness for the initial flash
+#define INITIAL_FLASH_BRIGHTNESS 10000
+// Minimum runtime of the animation in milliseconds before it can be restarted
+#define MIN_ANIMATION_RUN_TIME 800
+// Minimum time for brightness changes (ms)
+#define MIN_FADE_TIME 1
+// Additional random time for brightness changes (ms)
+#define FADE_TIME_VARIANCE 10
+// Minimum time to hold a brightness level (ms)
+#define MIN_HOLD_TIME 50
+// Additional random time to hold a brightness level (ms)
+#define HOLD_TIME_VARIANCE 200
+// Maximum allowed brightness
+#define BRIGHTNESS_LIMIT 12000
+// Parameters for power surge simulation
+#define FLICKER_PROBABILITY 25    // Probability of flickering (1-100)
+#define MAX_BRIGHTNESS 6500       // Maximum brightness during power surges
+#define BLACKOUT_PROBABILITY 5    // Reduced probability of short total blackout
+#define BLACKOUT_DURATION 150     // Duration of total blackout (ms)
+
+// ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
+// ↑ Animation configuration ↑
+// ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
+
 #define LED   B, 4
 #define TX    B, 2
 #define BTN   B, 3
@@ -130,67 +166,26 @@ const uint8_t exptable5[32] PROGMEM =
   return exp >> (15 - linear / 32);
 }
 
-// #define BASE_BRIGHTNESS 20
-// // #define MAX_BRIGHTNESS 100
-// #define BRIGHTNESS_VARIANCE (100-BASE_BRIGHTNESS)
-
-// Base brightness, relative to max ambient brightness
-#define BASE_BRIGHTNESS 5500
-// +/- var/2 to base brightness
-#define BRIGHTNESS_VARIANCE 3000
-// Elevation factor for ambient brightness reference
-#define ELEVATION 1.5
-
-// Total duration of the animation in milliseconds
-#define ANIMATION_DURATION 3500
-
-// Duration of the initial light flash in milliseconds
-#define INITIAL_FLASH_DURATION 100
-
-// Brightness multiplier for the initial flash (relative to MAX_BRIGHTNESS)
-#define INITIAL_FLASH_MULTIPLIER 1.3
-
-// Minimum runtime of the animation in milliseconds before it can be restarted
-#define MIN_ANIMATION_RUN_TIME 800
-
-// Minimum time for brightness changes (ms)
-#define MIN_FADE_TIME 1
-// Additional random time for brightness changes (ms)
-#define FADE_TIME_VARIANCE 10
-
-// Minimum time to hold a brightness level (ms)
-#define MIN_HOLD_TIME 50
-// Additional random time to hold a brightness level (ms)
-#define HOLD_TIME_VARIANCE 200
-
-// Parameters for power surge simulation
-#define FLICKER_PROBABILITY 25    // Probability of flickering (1-100)
-#define MAX_BRIGHTNESS 6500       // Maximum brightness during power surges
-#define BLACKOUT_PROBABILITY 5    // Reduced probability of short total blackout
-#define BLACKOUT_DURATION 150     // Duration of total blackout (ms)
-
 struct Led {
   volatile int *dac;
-//   const uint16_t MIN_BRIGHTNESS;
-  // const uint16_t MAX_BRIGHTNESS;
   struct Timer fade_timer;
   uint16_t start;
   uint16_t goal;
 } leds[] = {
   {.dac = &dac[0]},
 };
-inline void fade(struct Led *led, uint16_t from, uint16_t to, uint16_t duration) {
+void fade(struct Led *led, uint16_t from, uint16_t to, uint16_t duration) {
   resetTimer(&led->fade_timer);
   led->fade_timer.cycle = duration;
   led->start = from;
   led->goal = to;
+  if (led->goal > BRIGHTNESS_LIMIT) {
+    led->goal = BRIGHTNESS_LIMIT;
+  }
+  if (led->start > BRIGHTNESS_LIMIT) {
+    led->start = BRIGHTNESS_LIMIT;
+  }
 }
-
-// struct {
-//   bool is_pushed;
-//   //uint8_t samples;
-//   struct Timer sample_timer;
-// } button = {false, 0, {1}};
 
 int main() {
   initMillis();
@@ -206,41 +201,12 @@ int main() {
   enum States {INIT, STANDBY, FLASH};
   struct StateMachine fsm;
   initFSM(&fsm, INIT);
-  
-  // #define MAX_BRIGHTNESS 4096
-  // #define MIN_BRIGHTNESS 0
-  // #define DURATION 10000
-  
-  // struct Timer timer = {.cycle=DURATION};
-  // bool dir = true;
-  while(true) {
-    // if(checkAndResetTimer(&timer)) {
-    //   dir = !dir;
-    //   fade(&leds[0], dir ? MAX_BRIGHTNESS : MIN_BRIGHTNESS, dir ? MIN_BRIGHTNESS: MAX_BRIGHTNESS, DURATION);
-    // }
-    
-//     if(checkAndResetTimer(&button.sample_timer)) {
-//       if(PIN(BTN)==0) {
-//         if(button.samples < 10) {
-//           button.samples++;
-//         } else {
-//           if(!button.is_pushed) {
-//             transit(&fsm, fsm.current_state == ON ? OFF : ON);
-//             button.is_pushed = true;
-//           }
-//         }
-//       } else {
-//         button.samples = 0;
-//         button.is_pushed = false;
-//       }
-//     }
-//    
 
+  while(true) {
     struct Led *led = &leds[0];
     
     switch(updateFSM(&fsm)) {
       case INIT:
-        // fade(led, 0, 0, 1000);
         transit(&fsm, STANDBY);
         break;
       case STANDBY:
@@ -265,7 +231,7 @@ int main() {
         
         // Function to restart the animation
         void restartAnimation(void) {
-          fade(led, led->goal, MAX_BRIGHTNESS * INITIAL_FLASH_MULTIPLIER, 1);  // Immediate very bright flash
+          fade(led, led->goal, INITIAL_FLASH_BRIGHTNESS, 1);  // Immediate very bright flash
           initial_flash_done = false;
           cooldown = false;
           resetTimer(&timer);
@@ -306,7 +272,7 @@ int main() {
           if(checkAndResetTimer(&blackout_timer)) {
             in_blackout = false;
             // Start with bright power surge after outage
-            fade(led, 0, BASE_BRIGHTNESS + (rand() % (BRIGHTNESS_VARIANCE/2)), MIN_FADE_TIME);
+            fade(led, 0, BASE_BRIGHTNESS + (rand() % (BRIGHTNESS_VARIANCE)), MIN_FADE_TIME);
           }
         } 
         else if(checkAndResetTimer(&led->fade_timer)) {
@@ -315,10 +281,10 @@ int main() {
               // After hold time of initial flash, dim to elevated base brightness
               initial_flash_done = true;
               // Longer transition to higher base brightness
-              fade(led, MAX_BRIGHTNESS * INITIAL_FLASH_MULTIPLIER, BASE_BRIGHTNESS * 1.4, 500);
+              fade(led, INITIAL_FLASH_BRIGHTNESS, BASE_BRIGHTNESS * 1.4, 500);
             } else {
               // Maintain flash for the hold time
-              fade(led, MAX_BRIGHTNESS * INITIAL_FLASH_MULTIPLIER, MAX_BRIGHTNESS * INITIAL_FLASH_MULTIPLIER, 1);
+              fade(led, INITIAL_FLASH_BRIGHTNESS, INITIAL_FLASH_BRIGHTNESS, 1);
             }
           }
           // Random chance for total outage
@@ -338,7 +304,7 @@ int main() {
             // Chance for sudden power surge
             if(rand() % 100 < FLICKER_PROBABILITY) {
               // Bright power surge, fast rise
-              uint16_t peak = BASE_BRIGHTNESS + BRIGHTNESS_VARIANCE/2 + (rand() % (MAX_BRIGHTNESS - BASE_BRIGHTNESS - BRIGHTNESS_VARIANCE/2));
+              uint16_t peak = BASE_BRIGHTNESS + BRIGHTNESS_VARIANCE + (rand() % (MAX_BRIGHTNESS - BASE_BRIGHTNESS - BRIGHTNESS_VARIANCE));
               
               // With low probability especially bright peak
               if(rand() % 100 < 25) {
@@ -353,7 +319,7 @@ int main() {
             cooldown = true;
             
             // Random brightness with larger fluctuations
-            int16_t base_level = BASE_BRIGHTNESS + (-BRIGHTNESS_VARIANCE/2 + (rand() % BRIGHTNESS_VARIANCE));
+            int16_t base_level = BASE_BRIGHTNESS + (-BRIGHTNESS_VARIANCE + (rand() % BRIGHTNESS_VARIANCE));
             
             // More variable, mainly faster transitions
             uint16_t duration = MIN_FADE_TIME + (rand() % FADE_TIME_VARIANCE);
@@ -381,23 +347,5 @@ int main() {
         *led->dac = brightness;
       }
     }
-    
-//     FOR_ALL_CHANNELS {
-//       #define scale(val, fac) (((uint32_t)val)*fac*4096)/4096;
-//       uint16_t environ = scale(ldr_adc, ELEVATION);
-//       // Mindesthelligkeit begrenzen
-//       environ = min(max(environ, 500), 4096);
-// //       environ = 4096;
-//       
-//       uint16_t brightness = ((int16_t)0)+linearInterpolate(led->start, led->goal, &led->fade_timer);
-//       uint16_t led_max = (((uint32_t)environ)*(led->MAX_BRIGHTNESS))/4096;
-//       uint16_t led_min = 0; //fsm.last_state == OFF ? 0 : (((uint32_t)ldr_adc)*(led->MIN_BRIGHTNESS))/1023;
-//       brightness = (((uint32_t)brightness)*(led_max-led_min))/4096+led_min;
-// //       if(index==0) printf("Brightness: %d\n", environ);
-//       
-//       ATOMIC_BLOCK(ATOMIC_FORCEON) {
-//         *led->dac = brightness; //correctGamma(brightness); ldr_adc; //
-//       }
-//     }
   }
 }
